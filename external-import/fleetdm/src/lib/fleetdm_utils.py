@@ -1,20 +1,22 @@
 import ipaddress
 from datetime import datetime, timedelta
 import math
+import logging
+import uuid
 
+LOGGER = logging.getLogger(__name__)
 
-def cleanup_empty_string_in_dict(data: dict = {}):
+def cleanup_empty_strings(data: dict):
     """
     Remove key-value pairs from a dictionary where the value is an empty string.
 
-        Args:
+    Args:
         data (dict): The dictionary to clean up.
 
-            Returns:
+    Returns:
         dict: A new dictionary with empty string values removed.
     """
-    return {key: value for (key, value) in data.items() if value != ""}
-
+    return {key: value for key, value in data.items() if value != ""}
 
 def parse_timestamp(timestamp_str: str):
     """
@@ -26,12 +28,7 @@ def parse_timestamp(timestamp_str: str):
     Returns:
         datetime: The parsed datetime object. If the input is empty, returns the current datetime.
     """
-    if timestamp_str:
-        timestamp = datetime.strptime(timestamp_str, "%Y-%m-%dT%H:%M:%SZ")
-    else:
-        timestamp = datetime.now()
-    return timestamp
-
+    return datetime.strptime(timestamp_str, "%Y-%m-%dT%H:%M:%SZ") if timestamp_str else datetime.now()
 
 def parse_relationship_timestamp(timestamp_str: str, days: int = 2):
     """
@@ -46,7 +43,6 @@ def parse_relationship_timestamp(timestamp_str: str, days: int = 2):
     """
     return parse_timestamp(timestamp_str) + timedelta(days=days)
 
-
 def ip_type(ip: str):
     """
     Determine the type of IP address (IPv4 or IPv6).
@@ -58,13 +54,8 @@ def ip_type(ip: str):
         str: 'ipv4-addr' if the IP is IPv4, 'ipv6-addr' if the IP is IPv6, None if the input is invalid.
     """
     try:
-        ipaddress_version = ipaddress.ip_address(ip).version
-        if ipaddress_version == 4:
-            return "ipv4-addr"
-        elif ipaddress_version == 6:
-            return "ipv6-addr"
-        else:
-            return None
+        version = ipaddress.ip_address(ip).version
+        return "ipv4-addr" if version == 4 else "ipv6-addr"
     except ValueError:
         return None
 
@@ -87,15 +78,38 @@ def remove_duplicates(data: list):
     dedup_list = []
 
     for item in data:
-        item_id = item.get("id")
+        item_id = item.id  # Access the 'id' attribute directly
         if item_id not in seen_ids:
             seen_ids.add(item_id)
             dedup_list.append(item)
-    return list(seen_ids), dedup_list
+    return list(seen_ids), data
 
 def divide_and_round_up(numerator, denominator):
+    """
+    Divide the numerator by the denominator and round up the result.
+
+    Args:
+        numerator (float): The numerator for the division.
+        denominator (float): The denominator for the division.
+
+    Returns:
+        int: The result of the division rounded up to the nearest integer.
+    """
     if denominator == 0:
         raise ValueError("Denominator cannot be zero.")
-    result = numerator / denominator
-    rounded_up_result = math.ceil(result)
-    return rounded_up_result
+    return math.ceil(numerator / denominator)
+
+def generate_id(prefix:str, data:dict):
+    """
+    Generate a unique identifier based on the input data.
+
+    Args:
+        prefix (str): The prefix to use for the generated ID.
+        data (dict): The data to use for generating the ID.
+
+    Returns:
+        str: The generated ID.
+    """
+    data_str = str(data).lower()
+    id = str(uuid.uuid5(uuid.UUID("00abedb4-aa42-466c-9c01-fed23315a9b7"), data_str))
+    return f"{prefix}--{id}"

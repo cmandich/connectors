@@ -3,6 +3,10 @@ services:
   connector:
     build: .
     container_name: ${CONTAINER_NAME}
+    # Mount /opt/connector to the current directory
+    # to allow the connector to be updated without rebuilding the image.
+    volumes:
+      - .:/opt/connector/test
     environment:
       # Connector's definition parameters:
       - CONNECTOR_NAME=${CONNECTOR_NAME}
@@ -18,9 +22,8 @@ services:
       - FLEETDM_BASE_URL=${FLEETDM_BASE_URL}
       - FLEETDM_API_KEY=${FLEETDM_API_KEY}
       - FLEETDM_PER_PAGE=${FLEETDM_PER_PAGE}
-    restart: always
-## TODO: Uncomment.
-# networks:
-#   default:
-#     external: true
-#     name: docker_default
+    # restart: always
+networks:
+  default:
+    external: true
+    name: docker_default
