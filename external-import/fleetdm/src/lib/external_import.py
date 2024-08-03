@@ -27,7 +27,7 @@ class ExternalImportConnector:
         # Specific connector attributes for external import connectors
         try:
             self.interval = os.environ.get("CONNECTOR_RUN_EVERY", None).lower()
-            self.helper.log_info(
+            self.helper.connector_logger.info(
                 f"Verifying integrity of the CONNECTOR_RUN_EVERY value: '{self.interval}'"
             )
             unit = self.interval[-1]
@@ -40,7 +40,7 @@ class ExternalImportConnector:
                 "It SHOULD be a string in the format '7d', '12h', '10m', '30s' where the final letter "
                 "SHOULD be one of 'd', 'h', 'm', 's' standing for day, hour, minute, second respectively. "
             )
-            self.helper.log_error(msg)
+            self.helper.connector_logger.error(msg)
             raise ValueError(msg) from ex
 
         update_existing_data = os.environ.get("CONNECTOR_UPDATE_EXISTING_DATA", "false")
@@ -59,7 +59,7 @@ class ExternalImportConnector:
                 f"Error when grabbing CONNECTOR_UPDATE_EXISTING_DATA environment variable: '{update_existing_data}'. "
                 "It SHOULD be either `true` or `false`. `false` is assumed. "
             )
-            self.helper.log_warning(msg)
+            self.helper.connector_logger.warning(msg)
             self.update_existing_data = "false"
 
     def _collect_intelligence(self, timestamp: int) -> list:
@@ -89,7 +89,7 @@ class ExternalImportConnector:
                 # In seconds:
                 return int(value)
         except Exception as ex:
-            self.helper.log_error(
+            self.helper.connector_logger.error(
                 f"Error when converting CONNECTOR_RUN_EVERY environment variable: '{self.interval}'. {str(ex)}"
             )
             raise ValueError(
@@ -98,7 +98,7 @@ class ExternalImportConnector:
 
     def run(self) -> None:
         # Main procedure
-        self.helper.log_info(f"Starting {self.helper.connect_name} connector...")
+        self.helper.connector_logger.info(f"Starting {self.helper.connect_name} connector...")
         while True:
             try:
                 # Get the current timestamp and check
@@ -106,13 +106,13 @@ class ExternalImportConnector:
                 current_state = self.helper.get_state()
                 if current_state is not None and "last_run" in current_state:
                     last_run = current_state["last_run"]
-                    self.helper.log_info(
+                    self.helper.connector_logger.info(
                         f"{self.helper.connect_name} connector last run: "
                         f'{datetime.utcfromtimestamp(last_run).strftime("%Y-%m-%d %H:%M:%S")}'
                     )
                 else:
                     last_run = None
-                    self.helper.log_info(
+                    self.helper.connector_logger.info(
                         f"{self.helper.connect_name} connector has never run"
                     )
 
@@ -120,15 +120,15 @@ class ExternalImportConnector:
                 if last_run is None or ((timestamp - last_run) >= self._get_interval()):
                     self.helper.metric.inc("run_count")
                     self.helper.metric.state("running")
-                    self.helper.log_info(f"{self.helper.connect_name} will run!")
+                    self.helper.connector_logger.info(f"{self.helper.connect_name} will run!")
 
                     try:
                         # Performing the collection of intelligence
                         self._collect_intelligence(timestamp=timestamp)
                     except Exception as e:
-                        self.helper.log_error(str(e))
+                        self.helper.connector_logger.error(str(e))
 
-                    self.helper.log_debug(
+                    self.helper.connector_logger.debug(
                         f"Grabbing current state and update it with last_run: {timestamp}"
                     )
                     current_state = self.helper.get_state()
@@ -138,27 +138,27 @@ class ExternalImportConnector:
                         current_state = {"last_run": timestamp}
                     self.helper.set_state(current_state)
 
-                    self.helper.log_info(
+                    self.helper.connector_logger.info(
                         f"Last_run stored, next run in: {round(self._get_interval() / 60 / 60, 2)} hours"
                     )
                 else:
                     self.helper.metric.state("idle")
                     new_interval = self._get_interval() - (timestamp - last_run)
-                    self.helper.log_info(
+                    self.helper.connector_logger.info(
                         f"{self.helper.connect_name} connector will not run, "
                         f"next run in: {round(new_interval / 60 / 60, 2)} hours"
                     )
 
             except (KeyboardInterrupt, SystemExit):
-                self.helper.log_info(f"{self.helper.connect_name} connector stopped")
+                self.helper.connector_logger.info(f"{self.helper.connect_name} connector stopped")
                 sys.exit(0)
             except Exception as e:
                 self.helper.metric.inc("error_count")
                 self.helper.metric.state("stopped")
-                self.helper.log_error(str(e))
+                self.helper.connector_logger.error(str(e))
 
             if self.helper.connect_run_and_terminate:
-                self.helper.log_info(f"{self.helper.connect_name} connector ended")
+                self.helper.connector_logger.info(f"{self.helper.connect_name} connector ended")
                 sys.exit(0)
 
             time.sleep(60)

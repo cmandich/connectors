@@ -32,7 +32,7 @@ Most of the times, these values are NOT expected to be changed.
 
 However, there are other values which are expected to be configured by end users.
 The following values are expected to be defined in the `.env` file.
-This file is included in the `.gitignore` to avoid leaking sensitive date). 
+This file is included in the `.gitignore` to avoid leaking sensitive date).
 Note tha the `.env.sample` file can be used as a reference.
 
 The ones that follow are connector's generic execution parameters expected to be added for export connectors.
@@ -57,7 +57,7 @@ Finally, the ones that follow are connector's specific execution parameters expe
 ### Debugging ###
 
 The connector can be debugged by setting the appropiate log level.
-Note that logging messages can be added using `self.helper.log_{LOG_LEVEL}("Sample message")`, i. e., `self.helper.log_error("An error message")`.
+Note that logging messages can be added using `self.helper.connector_logger.{LOG_LEVEL}("Sample message")`, i. e., `self.helper.log_error("An error message")`.
 
 <!-- Any additional information to help future users debug and report detailed issues concerning this connector -->
 

@@ -42,20 +42,20 @@ class CustomConnector(ExternalImportConnector):
         Returns:
             stix_objects: A list of STIX2 objects.
         """
-        self.helper.log_debug(f"{self.helper.connect_name} connector is starting the collection of objects...")
+        self.helper.connector_logger.debug(f"{self.helper.connect_name} connector is starting the collection of objects...")
 
         now = datetime.utcfromtimestamp(timestamp)
         fdm = FleetDMHostList(base_url=self.base_url, api_key=self.api_key, per_page=self.per_page)
 
         host_count = fdm.get_host_count()
-        self.helper.log_info(f'{host_count} hosts found in FleetDM.')
+        self.helper.connector_logger.info(f'{host_count} hosts found in FleetDM.')
 
         pages = divide_and_round_up(host_count, self.per_page)
-        self.helper.log_info(f'Estimated number of pages: {pages}')
+        self.helper.connector_logger.info(f'Estimated number of pages: {pages}')
 
         work_id_list = self._process_pages(fdm, pages, now)
 
-        self.helper.log_info(f"{self.helper.connect_name} connector has finished the collection of objects, Total Hosts Returned: {fdm.get_return_hosts()}.")
+        self.helper.connector_logger.info(f"{self.helper.connect_name} connector has finished the collection of objects, Total Hosts Returned: {fdm.get_return_hosts()}.")
         return None
 
     def _process_pages(self, fdm, pages, now):
@@ -84,7 +84,7 @@ class CustomConnector(ExternalImportConnector):
                 stix_objects.extend(stix_obj.get_stix_objects())
 
             stix_objects_ids, stix_objects = remove_duplicates(data=stix_objects)
-            self.helper.log_info(f"{len(stix_objects_ids)} STIX2 objects have been compiled by {self.helper.connect_name} connector.")
+            self.helper.connector_logger.info(f"{len(stix_objects_ids)} STIX2 objects have been compiled by {self.helper.connect_name} connector.")
 
             self._send_stix_bundle(stix_objects, work_id)
 
@@ -102,7 +102,7 @@ class CustomConnector(ExternalImportConnector):
         with open('test/stix_bundle.json', 'w') as f:
             f.write(bundle)
         self.helper.send_stix2_bundle(bundle, update=self.update_existing_data, work_id=work_id)
-        self.helper.log_info(f"STIX objects have been sent to OpenCTI.")
+        self.helper.connector_logger.info(f"STIX objects have been sent to OpenCTI.")
 
 if __name__ == "__main__":
     try:
